@@ -2,6 +2,7 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,14 +13,17 @@ import java.util.List;
 @Service
 public class ExchangeRateService {
 
-    private final ExchangeRateRepository repository;
+    private final CurrencyRepository currencyRepository;
+    private final ExchangeRateRepository exchangeRateRepository;
 
-    public ExchangeRateService(ExchangeRateRepository repository) {
-        this.repository = repository;
+    public ExchangeRateService(CurrencyRepository currencyRepository,
+                               ExchangeRateRepository exchangeRateRepository) {
+        this.currencyRepository = currencyRepository;
+        this.exchangeRateRepository = exchangeRateRepository;
     }
 
     /**
-     * Returns the list of all available currency codes.
+     * Returns all available currency codes, sourced from the currencies table.
      */
     public List<String> getAvailableCurrencies() {
         throw new UnsupportedOperationException("not yet implemented");

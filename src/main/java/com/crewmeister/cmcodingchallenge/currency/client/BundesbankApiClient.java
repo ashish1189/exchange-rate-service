@@ -16,26 +16,42 @@ public class BundesbankApiClient {
     private final String key;
 
     public BundesbankApiClient(
+            RestClient.Builder restClientBuilder,
             @Value("${bundesbank.api.base-url}") String baseUrl,
             @Value("${bundesbank.api.dataflow}") String dataflow,
             @Value("${bundesbank.api.key}") String key
     ) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
         this.dataflow = dataflow;
         this.key = key;
     }
 
-    /**
-     * Fetches all available EUR exchange rates (full history) from the Bundesbank API.
-     */
     public List<ExchangeRate> fetchAllRates() {
-        throw new UnsupportedOperationException("not yet implemented");
+        String csv = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/data/{dataflow}/{key}")
+                        .queryParam("detail", "dataonly")
+                        .queryParam("format", "sdmx_csv")
+                        .build(dataflow, key))
+                .retrieve()
+                .body(String.class);
+
+        return BundesbankCsvParser.parse(csv);
     }
 
-    /**
-     * Fetches EUR exchange rates for a specific date from the Bundesbank API.
-     */
     public List<ExchangeRate> fetchRatesForDate(LocalDate date) {
-        throw new UnsupportedOperationException("not yet implemented");
+        String dateStr = date.toString();
+        String csv = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/data/{dataflow}/{key}")
+                        .queryParam("detail", "dataonly")
+                        .queryParam("format", "sdmx_csv")
+                        .queryParam("startPeriod", dateStr)
+                        .queryParam("endPeriod", dateStr)
+                        .build(dataflow, key))
+                .retrieve()
+                .body(String.class);
+
+        return BundesbankCsvParser.parse(csv);
     }
 }
