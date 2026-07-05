@@ -1,0 +1,64 @@
+package com.crewmeister.cmcodingchallenge.currency.api;
+
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api")
+public class CurrencyController {
+
+    private final ExchangeRateService exchangeRateService;
+
+    public CurrencyController(ExchangeRateService exchangeRateService) {
+        this.exchangeRateService = exchangeRateService;
+    }
+
+    /**
+     * Returns all available currency codes.
+     * GET /api/currencies
+     */
+    @GetMapping("/currencies")
+    public ResponseEntity<List<String>> getCurrencies() {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    /**
+     * Returns all EUR-FX exchange rates for all currencies across all available dates.
+     * GET /api/exchange-rates
+     */
+    @GetMapping("/exchange-rates")
+    public ResponseEntity<List<ExchangeRateResponse>> getAllRates() {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    /**
+     * Returns the EUR-FX exchange rate for a specific currency on a specific date.
+     * Falls back to the last business day if no rate exists for the requested date.
+     * GET /api/exchange-rates/{currency}/{date}
+     */
+    @GetMapping("/exchange-rates/{currency}/{date}")
+    public ResponseEntity<ExchangeRateResponse> getRateForCurrencyOnDate(
+            @PathVariable String currency,
+            @PathVariable LocalDate date) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    /**
+     * Converts a foreign currency amount to EUR on a specific date.
+     * GET /api/exchange-rates/convert?currency=USD&amount=100&date=2025-01-06
+     */
+    @GetMapping("/exchange-rates/convert")
+    public ResponseEntity<ConversionResponse> convertToEur(
+            @RequestParam String currency,
+            @RequestParam BigDecimal amount,
+            @RequestParam LocalDate date) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+}
