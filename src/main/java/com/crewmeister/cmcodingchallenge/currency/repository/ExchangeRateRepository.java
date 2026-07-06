@@ -28,4 +28,6 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRateEntity
                                                       @Param("date") LocalDate date);
 
     boolean existsBy();
+
+    boolean existsByCurrencyCodeAndDate(String code, LocalDate date);
 }
