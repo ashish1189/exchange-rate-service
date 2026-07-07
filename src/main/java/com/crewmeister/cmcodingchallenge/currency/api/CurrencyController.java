@@ -3,6 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.api;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +27,7 @@ public class CurrencyController {
      */
     @GetMapping("/currencies")
     public ResponseEntity<List<String>> getCurrencies() {
-        throw new UnsupportedOperationException("not yet implemented");
+        return ResponseEntity.ok(exchangeRateService.getAvailableCurrencies());
     }
 
     /**
@@ -35,7 +36,7 @@ public class CurrencyController {
      */
     @GetMapping("/exchange-rates")
     public ResponseEntity<List<ExchangeRateResponse>> getAllRates() {
-        throw new UnsupportedOperationException("not yet implemented");
+        return ResponseEntity.ok(exchangeRateService.getAllRates());
     }
 
     /**
@@ -46,8 +47,8 @@ public class CurrencyController {
     @GetMapping("/exchange-rates/{currency}/{date}")
     public ResponseEntity<ExchangeRateResponse> getRateForCurrencyOnDate(
             @PathVariable String currency,
-            @PathVariable LocalDate date) {
-        throw new UnsupportedOperationException("not yet implemented");
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(exchangeRateService.getRateForCurrencyOnDate(currency, date));
     }
 
     /**
@@ -58,7 +59,7 @@ public class CurrencyController {
     public ResponseEntity<ConversionResponse> convertToEur(
             @RequestParam String currency,
             @RequestParam BigDecimal amount,
-            @RequestParam LocalDate date) {
-        throw new UnsupportedOperationException("not yet implemented");
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(exchangeRateService.convertToEur(currency, amount, date));
     }
 }

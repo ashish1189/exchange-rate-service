@@ -19,6 +19,15 @@ spring:
       enabled: true
       path: /h2-console
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500
+
 bundesbank:
   api:
     base-url: https://api.statistiken.bundesbank.de/rest

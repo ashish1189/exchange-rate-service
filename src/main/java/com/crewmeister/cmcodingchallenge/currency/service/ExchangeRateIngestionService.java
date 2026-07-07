@@ -9,6 +9,8 @@ import com.crewmeister.cmcodingchallenge.currency.repository.entity.ExchangeRate
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,10 @@ public class ExchangeRateIngestionService {
 
     @Scheduled(cron = "${exchange-rate.scheduler.cron}")
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "currencies", allEntries = true),
+            @CacheEvict(value = "rates", allEntries = true)
+    })
     public void fetchAndStoreDailyRates() {
         LocalDate yesterday = LocalDate.now(clock).minusDays(1);
         log.info("Fetching daily exchange rates for {}", yesterday);

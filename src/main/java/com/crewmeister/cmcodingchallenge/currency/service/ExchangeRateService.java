@@ -2,16 +2,24 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
+import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
+import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEntity;
+import com.crewmeister.cmcodingchallenge.currency.repository.mapper.ExchangeRateMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class ExchangeRateService {
+
+    private static final int CONVERSION_SCALE = 6;
 
     private final CurrencyRepository currencyRepository;
     private final ExchangeRateRepository exchangeRateRepository;
@@ -22,33 +30,41 @@ public class ExchangeRateService {
         this.exchangeRateRepository = exchangeRateRepository;
     }
 
-    /**
-     * Returns all available currency codes, sourced from the currencies table.
-     */
+    @Cacheable("currencies")
     public List<String> getAvailableCurrencies() {
-        throw new UnsupportedOperationException("not yet implemented");
+        return currencyRepository.findAllByOrderByCodeAsc()
+                .stream()
+                .map(CurrencyEntity::getCode)
+                .toList();
     }
 
-    /**
-     * Returns all EUR-FX exchange rates across all currencies and all available dates.
-     */
     public List<ExchangeRateResponse> getAllRates() {
-        throw new UnsupportedOperationException("not yet implemented");
+        return exchangeRateRepository.findAllOrderByCurrencyAndDate()
+                .stream()
+                .map(ExchangeRateMapper::toDomain)
+                .map(this::toRateResponse)
+                .toList();
     }
 
-    /**
-     * Returns the EUR-FX rate for a given currency on a given date.
-     * Falls back to the last available business day if no rate exists for that date.
-     */
+    @Cacheable(value = "rates", key = "#currency + '_' + #date")
     public ExchangeRateResponse getRateForCurrencyOnDate(String currency, LocalDate date) {
-        throw new UnsupportedOperationException("not yet implemented");
+        ExchangeRate rate = findRateOrThrow(currency, date);
+        return toRateResponse(rate);
     }
 
-    /**
-     * Converts a foreign currency amount to EUR on a given date.
-     * Falls back to the last available business day rate with full metadata in the response.
-     */
     public ConversionResponse convertToEur(String currency, BigDecimal amount, LocalDate date) {
-        throw new UnsupportedOperationException("not yet implemented");
+        ExchangeRate rate = findRateOrThrow(currency, date);
+        BigDecimal converted = amount.divide(rate.rate(), CONVERSION_SCALE, RoundingMode.HALF_UP);
+        return new ConversionResponse(currency, amount, date, rate.date(), rate.rate(), converted);
+    }
+
+    private ExchangeRate findRateOrThrow(String currency, LocalDate date) {
+        return exchangeRateRepository.findLatestOnOrBefore(currency, date)
+                .map(ExchangeRateMapper::toDomain)
+                .orElseThrow(() -> new ExchangeRateNotFoundException(currency, date));
+    }
+
+    private ExchangeRateResponse toRateResponse(ExchangeRate rate) {
+        return new ExchangeRateResponse(rate.currency().code(), rate.date(), rate.rate());
     }
 }
