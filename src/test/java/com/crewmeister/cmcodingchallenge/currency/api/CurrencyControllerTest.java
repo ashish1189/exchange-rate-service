@@ -5,6 +5,7 @@ import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
+import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -160,6 +161,18 @@ class CurrencyControllerTest {
                         .param("amount", "100")
                         .param("date", "2026-06-15"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return_400_when_amount_is_negative() throws Exception {
+        when(exchangeRateService.convertToEur(eq("USD"), any(BigDecimal.class), eq(DATE)))
+                .thenThrow(new InvalidAmountException(new BigDecimal("-50")));
+
+        mockMvc.perform(get("/api/exchange-rates/convert")
+                        .param("currency", "USD")
+                        .param("amount", "-50")
+                        .param("date", "2026-06-15"))
+                .andExpect(status().isBadRequest());
     }
 
     // --- 400 Bad Request ---

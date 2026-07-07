@@ -5,6 +5,7 @@ import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
+import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEntity;
@@ -151,6 +152,17 @@ class ExchangeRateServiceTest {
     }
 
     @Test
+    void should_accept_lowercase_currency_code_and_normalise_to_uppercase() {
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
+        when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
+                .thenReturn(Optional.of(rateEntity("USD", date, "1.0500")));
+
+        ExchangeRateResponse result = service.getRateForCurrencyOnDate("usd", date);
+
+        assertThat(result.currency()).isEqualTo("USD");
+    }
+
+    @Test
     void should_throw_when_no_rate_found_for_currency_on_or_before_requested_date() {
         LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
@@ -193,6 +205,27 @@ class ExchangeRateServiceTest {
         assertThat(result.requestedDate()).isEqualTo(saturday);
         assertThat(result.rateDate()).isEqualTo(friday);
         assertThat(result.convertedAmountInEur()).isEqualByComparingTo("50");
+    }
+
+    @Test
+    void should_return_zero_eur_without_dividing_when_amount_is_zero() {
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
+        when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
+                .thenReturn(Optional.of(rateEntity("USD", date, "2.000000")));
+
+        ConversionResponse result = service.convertToEur("USD", BigDecimal.ZERO, date);
+
+        assertThat(result.convertedAmountInEur()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.rate()).isEqualByComparingTo("2.000000");
+    }
+
+    @Test
+    void should_throw_when_amount_is_negative() {
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
+
+        assertThatThrownBy(() -> service.convertToEur("USD", new BigDecimal("-1"), date))
+                .isInstanceOf(InvalidAmountException.class)
+                .hasMessageContaining("-1");
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
+import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEntity;
@@ -56,15 +57,20 @@ public class ExchangeRateService {
         );
     }
 
-    @Cacheable(value = "rates", key = "#currency + '_' + #date")
+    @Cacheable(value = "rates", key = "#currency.toUpperCase() + '_' + #date")
     public ExchangeRateResponse getRateForCurrencyOnDate(String currency, LocalDate date) {
-        ExchangeRate rate = findRateOrThrow(currency, date);
+        ExchangeRate rate = findRateOrThrow(currency.toUpperCase(), date);
         return toRateResponse(rate);
     }
 
     public ConversionResponse convertToEur(String currency, BigDecimal amount, LocalDate date) {
-        ExchangeRate rate = findRateOrThrow(currency, date);
-        BigDecimal converted = amount.divide(rate.rate(), CONVERSION_SCALE, RoundingMode.HALF_UP);
+        if (amount.signum() < 0) {
+            throw new InvalidAmountException(amount);
+        }
+        ExchangeRate rate = findRateOrThrow(currency.toUpperCase(), date);
+        BigDecimal converted = amount.signum() == 0
+                ? BigDecimal.ZERO
+                : amount.divide(rate.rate(), CONVERSION_SCALE, RoundingMode.HALF_UP);
         return new ConversionResponse(currency, amount, date, rate.date(), rate.rate(), converted);
     }
 
