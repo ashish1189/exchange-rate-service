@@ -3,6 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.api;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
 import org.junit.jupiter.api.Test;
@@ -13,9 +14,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,7 +31,7 @@ class CurrencyControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockBean private ExchangeRateService exchangeRateService;
 
-    private static final LocalDate DATE = LocalDate.of(2026, 1, 2);
+    private static final LocalDate DATE = LocalDate.of(2026, Month.JUNE, 15);
 
     // --- GET /api/currencies ---
 
@@ -59,26 +62,49 @@ class CurrencyControllerTest {
     // --- GET /api/exchange-rates ---
 
     @Test
-    void should_return_200_with_all_exchange_rates() throws Exception {
-        when(exchangeRateService.getAllRates()).thenReturn(List.of(
-                new ExchangeRateResponse("GBP", DATE, new BigDecimal("0.8400")),
-                new ExchangeRateResponse("USD", DATE, new BigDecimal("1.0500"))
-        ));
+    void should_return_200_with_paginated_exchange_rates() throws Exception {
+        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+                List.of(new ExchangeRateResponse("GBP", DATE, new BigDecimal("0.8400")),
+                        new ExchangeRateResponse("USD", DATE, new BigDecimal("1.0500"))),
+                0, 25, 2L, 1, true, true);
+
+        when(exchangeRateService.getAllRates(anyInt(), anyInt())).thenReturn(response);
 
         mockMvc.perform(get("/api/exchange-rates"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].currency").value("GBP"))
-                .andExpect(jsonPath("$[0].date").value("2026-01-02"))
-                .andExpect(jsonPath("$[1].currency").value("USD"));
+                .andExpect(jsonPath("$.content[0].currency").value("GBP"))
+                .andExpect(jsonPath("$.content[0].date").value("2026-06-15"))
+                .andExpect(jsonPath("$.content[1].currency").value("USD"));
     }
 
     @Test
-    void should_return_200_with_empty_list_when_no_rates_available() throws Exception {
-        when(exchangeRateService.getAllRates()).thenReturn(List.of());
+    void should_return_correct_pagination_metadata() throws Exception {
+        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+                List.of(), 2, 25, 120L, 5, false, false);
+
+        when(exchangeRateService.getAllRates(anyInt(), anyInt())).thenReturn(response);
+
+        mockMvc.perform(get("/api/exchange-rates").param("page", "2").param("size", "25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.pageSize").value(25))
+                .andExpect(jsonPath("$.totalElements").value(120))
+                .andExpect(jsonPath("$.totalPages").value(5))
+                .andExpect(jsonPath("$.first").value(false))
+                .andExpect(jsonPath("$.last").value(false));
+    }
+
+    @Test
+    void should_return_200_with_empty_content_when_no_rates_available() throws Exception {
+        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+                List.of(), 0, 25, 0L, 0, true, true);
+
+        when(exchangeRateService.getAllRates(anyInt(), anyInt())).thenReturn(response);
 
         mockMvc.perform(get("/api/exchange-rates"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.content").isEmpty())
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     // --- GET /api/exchange-rates/{currency}/{date} ---
@@ -88,10 +114,10 @@ class CurrencyControllerTest {
         when(exchangeRateService.getRateForCurrencyOnDate("USD", DATE))
                 .thenReturn(new ExchangeRateResponse("USD", DATE, new BigDecimal("1.0500")));
 
-        mockMvc.perform(get("/api/exchange-rates/USD/2026-01-02"))
+        mockMvc.perform(get("/api/exchange-rates/USD/2026-06-15"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currency").value("USD"))
-                .andExpect(jsonPath("$.date").value("2026-01-02"))
+                .andExpect(jsonPath("$.date").value("2026-06-15"))
                 .andExpect(jsonPath("$.rate").value(1.05));
     }
 
@@ -100,7 +126,7 @@ class CurrencyControllerTest {
         when(exchangeRateService.getRateForCurrencyOnDate("USD", DATE))
                 .thenThrow(new ExchangeRateNotFoundException("USD", DATE));
 
-        mockMvc.perform(get("/api/exchange-rates/USD/2026-01-02"))
+        mockMvc.perform(get("/api/exchange-rates/USD/2026-06-15"))
                 .andExpect(status().isNotFound());
     }
 
@@ -116,11 +142,11 @@ class CurrencyControllerTest {
         mockMvc.perform(get("/api/exchange-rates/convert")
                         .param("currency", "USD")
                         .param("amount", "100")
-                        .param("date", "2026-01-02"))
+                        .param("date", "2026-06-15"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currency").value("USD"))
-                .andExpect(jsonPath("$.requestedDate").value("2026-01-02"))
-                .andExpect(jsonPath("$.rateDate").value("2026-01-02"))
+                .andExpect(jsonPath("$.requestedDate").value("2026-06-15"))
+                .andExpect(jsonPath("$.rateDate").value("2026-06-15"))
                 .andExpect(jsonPath("$.convertedAmountInEur").value(50.0));
     }
 
@@ -132,7 +158,7 @@ class CurrencyControllerTest {
         mockMvc.perform(get("/api/exchange-rates/convert")
                         .param("currency", "USD")
                         .param("amount", "100")
-                        .param("date", "2026-01-02"))
+                        .param("date", "2026-06-15"))
                 .andExpect(status().isNotFound());
     }
 

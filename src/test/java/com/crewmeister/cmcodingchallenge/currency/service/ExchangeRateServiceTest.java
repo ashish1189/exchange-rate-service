@@ -3,6 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
@@ -14,8 +15,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
@@ -66,36 +72,61 @@ class ExchangeRateServiceTest {
     // --- getAllRates ---
 
     @Test
-    void should_return_all_exchange_rates_mapped_to_response_dto() {
-        LocalDate date = LocalDate.of(2026, 1, 2);
-        when(exchangeRateRepository.findAllOrderByCurrencyAndDate()).thenReturn(List.of(
-                rateEntity("GBP", date, "0.8400"),
-                rateEntity("USD", date, "1.0500")
-        ));
+    void should_return_paginated_exchange_rates_mapped_to_response_dto() {
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
+        PageRequest pageable = PageRequest.of(0, 25);
+        Page<ExchangeRateEntity> page = new PageImpl<>(
+                List.of(rateEntity("GBP", date, "0.8400"), rateEntity("USD", date, "1.0500")),
+                pageable, 2);
 
-        List<ExchangeRateResponse> result = service.getAllRates();
+        when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable)).thenReturn(page);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).currency()).isEqualTo("GBP");
-        assertThat(result.get(0).date()).isEqualTo(date);
-        assertThat(result.get(0).rate()).isEqualByComparingTo("0.8400");
-        assertThat(result.get(1).currency()).isEqualTo("USD");
+        PagedResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
+
+        assertThat(result.content()).hasSize(2);
+        assertThat(result.content().get(0).currency()).isEqualTo("GBP");
+        assertThat(result.content().get(0).date()).isEqualTo(date);
+        assertThat(result.content().get(0).rate()).isEqualByComparingTo("0.8400");
+        assertThat(result.content().get(1).currency()).isEqualTo("USD");
     }
 
     @Test
-    void should_return_empty_list_when_no_rates_in_database() {
-        when(exchangeRateRepository.findAllOrderByCurrencyAndDate()).thenReturn(List.of());
+    void should_return_correct_pagination_metadata() {
+        PageRequest pageable = PageRequest.of(2, 25);
+        Page<ExchangeRateEntity> page = new PageImpl<>(List.of(), pageable, 120);
 
-        List<ExchangeRateResponse> result = service.getAllRates();
+        when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable)).thenReturn(page);
 
-        assertThat(result).isEmpty();
+        PagedResponse<ExchangeRateResponse> result = service.getAllRates(2, 25);
+
+        assertThat(result.page()).isEqualTo(2);
+        assertThat(result.pageSize()).isEqualTo(25);
+        assertThat(result.totalElements()).isEqualTo(120);
+        assertThat(result.totalPages()).isEqualTo(5);
+        assertThat(result.first()).isFalse();
+        assertThat(result.last()).isFalse();
+    }
+
+    @Test
+    void should_return_empty_content_when_no_rates_in_database() {
+        PageRequest pageable = PageRequest.of(0, 25);
+        when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        PagedResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
+
+        assertThat(result.content()).isEmpty();
+        assertThat(result.totalElements()).isZero();
+        assertThat(result.totalPages()).isZero();
+        assertThat(result.first()).isTrue();
+        assertThat(result.last()).isTrue();
     }
 
     // --- getRateForCurrencyOnDate ---
 
     @Test
     void should_return_rate_for_currency_on_exact_requested_date() {
-        LocalDate date = LocalDate.of(2026, 1, 2);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
                 .thenReturn(Optional.of(rateEntity("USD", date, "1.0500")));
 
@@ -108,8 +139,8 @@ class ExchangeRateServiceTest {
 
     @Test
     void should_return_last_available_rate_when_no_rate_exists_on_requested_date() {
-        LocalDate saturday = LocalDate.of(2026, 1, 3);
-        LocalDate friday = LocalDate.of(2026, 1, 2);
+        LocalDate saturday = LocalDate.of(2026, Month.JUNE, 13);
+        LocalDate friday = LocalDate.of(2026, Month.JUNE, 12);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", saturday))
                 .thenReturn(Optional.of(rateEntity("USD", friday, "1.0500")));
 
@@ -121,7 +152,7 @@ class ExchangeRateServiceTest {
 
     @Test
     void should_throw_when_no_rate_found_for_currency_on_or_before_requested_date() {
-        LocalDate date = LocalDate.of(2026, 1, 2);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
                 .thenReturn(Optional.empty());
 
@@ -135,7 +166,7 @@ class ExchangeRateServiceTest {
 
     @Test
     void should_convert_foreign_amount_to_eur_using_rate_on_requested_date() {
-        LocalDate date = LocalDate.of(2026, 1, 2);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
         // rate 2.0 means 1 EUR = 2 USD, so 100 USD = 50 EUR
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
                 .thenReturn(Optional.of(rateEntity("USD", date, "2.000000")));
@@ -152,8 +183,8 @@ class ExchangeRateServiceTest {
 
     @Test
     void should_reflect_fallback_rate_date_in_conversion_response_when_weekend_or_holiday() {
-        LocalDate saturday = LocalDate.of(2026, 1, 3);
-        LocalDate friday = LocalDate.of(2026, 1, 2);
+        LocalDate saturday = LocalDate.of(2026, Month.JUNE, 13);
+        LocalDate friday = LocalDate.of(2026, Month.JUNE, 12);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", saturday))
                 .thenReturn(Optional.of(rateEntity("USD", friday, "2.000000")));
 
@@ -166,7 +197,7 @@ class ExchangeRateServiceTest {
 
     @Test
     void should_throw_when_no_rate_available_for_conversion() {
-        LocalDate date = LocalDate.of(2026, 1, 2);
+        LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
                 .thenReturn(Optional.empty());
 

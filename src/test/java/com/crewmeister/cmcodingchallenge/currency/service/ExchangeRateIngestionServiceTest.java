@@ -55,7 +55,7 @@ class ExchangeRateIngestionServiceTest {
 
     @Test
     void should_fetch_and_persist_all_historical_rates_when_database_is_empty() {
-        ExchangeRate usdRate = rate("USD", "2026-01-02", "1.0500");
+        ExchangeRate usdRate = rate("USD", "2026-06-15", "1.0500");
         CurrencyEntity usdEntity = new CurrencyEntity("USD");
 
         when(exchangeRateRepository.existsBy()).thenReturn(false);
@@ -77,7 +77,7 @@ class ExchangeRateIngestionServiceTest {
 
     @Test
     void should_create_new_currency_entity_when_not_yet_in_database() {
-        ExchangeRate gbpRate = rate("GBP", "2026-01-02", "0.8400");
+        ExchangeRate gbpRate = rate("GBP", "2026-06-15", "0.8400");
         CurrencyEntity savedGbp = new CurrencyEntity("GBP");
 
         when(exchangeRateRepository.existsBy()).thenReturn(false);
@@ -92,7 +92,7 @@ class ExchangeRateIngestionServiceTest {
 
     @Test
     void should_reuse_existing_currency_entity_without_inserting_it_again() {
-        ExchangeRate rate = rate("USD", "2026-01-02", "1.0500");
+        ExchangeRate rate = rate("USD", "2026-06-15", "1.0500");
         CurrencyEntity existing = new CurrencyEntity("USD");
 
         when(exchangeRateRepository.existsBy()).thenReturn(false);

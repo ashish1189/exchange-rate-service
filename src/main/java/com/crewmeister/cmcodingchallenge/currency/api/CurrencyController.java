@@ -3,10 +3,15 @@ package com.crewmeister.cmcodingchallenge.currency.api;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,8 +41,10 @@ public class CurrencyController {
      * GET /api/exchange-rates
      */
     @GetMapping("/exchange-rates")
-    public ResponseEntity<List<ExchangeRateResponse>> getAllRates() {
-        return ResponseEntity.ok(exchangeRateService.getAllRates());
+    public ResponseEntity<PagedResponse<ExchangeRateResponse>> getAllRates(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return ResponseEntity.ok(exchangeRateService.getAllRates(page, size));
     }
 
     /**

@@ -3,6 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
 import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
@@ -11,6 +12,8 @@ import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEnti
 import com.crewmeister.cmcodingchallenge.currency.repository.mapper.ExchangeRateMapper;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -45,12 +48,12 @@ public class ExchangeRateService {
                 .toList();
     }
 
-    public List<ExchangeRateResponse> getAllRates() {
-        return exchangeRateRepository.findAllOrderByCurrencyAndDate()
-                .stream()
-                .map(ExchangeRateMapper::toDomain)
-                .map(this::toRateResponse)
-                .toList();
+    public PagedResponse<ExchangeRateResponse> getAllRates(int page, int size) {
+        return PagedResponse.from(
+                exchangeRateRepository.findAllOrderByCurrencyAndDate(PageRequest.of(page, size))
+                        .map(ExchangeRateMapper::toDomain)
+                        .map(this::toRateResponse)
+        );
     }
 
     @Cacheable(value = "rates", key = "#currency + '_' + #date")

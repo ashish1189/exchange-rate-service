@@ -1,18 +1,20 @@
 package com.crewmeister.cmcodingchallenge.currency.repository;
 
 import com.crewmeister.cmcodingchallenge.currency.repository.entity.ExchangeRateEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 public interface ExchangeRateRepository extends JpaRepository<ExchangeRateEntity, Long> {
 
-    @Query("SELECT e FROM ExchangeRateEntity e ORDER BY e.currency.code ASC, e.date ASC")
-    List<ExchangeRateEntity> findAllOrderByCurrencyAndDate();
+    @Query(value = "SELECT e FROM ExchangeRateEntity e ORDER BY e.currency.code ASC, e.date ASC",
+           countQuery = "SELECT COUNT(e) FROM ExchangeRateEntity e")
+    Page<ExchangeRateEntity> findAllOrderByCurrencyAndDate(Pageable pageable);
 
     /**
      * Returns the most recent rate for a currency on or before the given date.
