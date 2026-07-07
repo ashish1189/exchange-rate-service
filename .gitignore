@@ -35,3 +35,6 @@ build/
 
 ### Reference files ###
 *.csv
+
+### Local H2 database (persisted across restarts, not for source control) ###
+data/

@@ -1,6 +1,7 @@
 package com.crewmeister.cmcodingchallenge.currency.service;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class ExchangeRateService {
@@ -31,10 +34,14 @@ public class ExchangeRateService {
     }
 
     @Cacheable("currencies")
-    public List<String> getAvailableCurrencies() {
+    public List<CurrencyResponse> getAvailableCurrencies() {
         return currencyRepository.findAllByOrderByCodeAsc()
                 .stream()
-                .map(CurrencyEntity::getCode)
+                .map(entity -> {
+                    String code = entity.getCode();
+                    String name = Currency.getInstance(code).getDisplayName(Locale.ENGLISH);
+                    return new CurrencyResponse(code, name);
+                })
                 .toList();
     }
 

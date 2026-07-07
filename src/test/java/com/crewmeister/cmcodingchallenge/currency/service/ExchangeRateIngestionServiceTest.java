@@ -6,6 +6,7 @@ import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEntity;
+import com.crewmeister.cmcodingchallenge.currency.repository.entity.ExchangeRateEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,15 +61,18 @@ class ExchangeRateIngestionServiceTest {
         when(exchangeRateRepository.existsBy()).thenReturn(false);
         when(apiClient.fetchAllRates()).thenReturn(List.of(usdRate));
         when(currencyRepository.findByCode("USD")).thenReturn(Optional.of(usdEntity));
-        when(exchangeRateRepository.existsByCurrencyCodeAndDate("USD", usdRate.date())).thenReturn(false);
 
         service().loadHistoricalRatesIfEmpty();
 
         verify(apiClient).fetchAllRates();
-        verify(exchangeRateRepository).save(argThat(e ->
-                e.getCurrency().getCode().equals("USD") &&
-                e.getDate().equals(usdRate.date()) &&
-                e.getRate().compareTo(usdRate.rate()) == 0));
+        verify(exchangeRateRepository).saveAll(argThat((Iterable<ExchangeRateEntity> batch) -> {
+            List<ExchangeRateEntity> list = new ArrayList<>();
+            batch.forEach(list::add);
+            return list.size() == 1 &&
+                    list.get(0).getCurrency().getCode().equals("USD") &&
+                    list.get(0).getDate().equals(usdRate.date()) &&
+                    list.get(0).getRate().compareTo(usdRate.rate()) == 0;
+        }));
     }
 
     @Test
@@ -79,7 +84,6 @@ class ExchangeRateIngestionServiceTest {
         when(apiClient.fetchAllRates()).thenReturn(List.of(gbpRate));
         when(currencyRepository.findByCode("GBP")).thenReturn(Optional.empty());
         when(currencyRepository.save(any())).thenReturn(savedGbp);
-        when(exchangeRateRepository.existsByCurrencyCodeAndDate("GBP", gbpRate.date())).thenReturn(false);
 
         service().loadHistoricalRatesIfEmpty();
 
@@ -94,7 +98,6 @@ class ExchangeRateIngestionServiceTest {
         when(exchangeRateRepository.existsBy()).thenReturn(false);
         when(apiClient.fetchAllRates()).thenReturn(List.of(rate));
         when(currencyRepository.findByCode("USD")).thenReturn(Optional.of(existing));
-        when(exchangeRateRepository.existsByCurrencyCodeAndDate("USD", rate.date())).thenReturn(false);
 
         service().loadHistoricalRatesIfEmpty();
 
@@ -102,16 +105,15 @@ class ExchangeRateIngestionServiceTest {
     }
 
     @Test
-    void should_skip_rate_if_entry_already_exists_for_currency_and_date() {
-        ExchangeRate rate = rate("USD", "2026-01-02", "1.0500");
+    void should_skip_rate_on_daily_sync_if_entry_already_exists_for_currency_and_date() {
+        ExchangeRate rate = rate("USD", YESTERDAY.toString(), "1.0500");
         CurrencyEntity usdEntity = new CurrencyEntity("USD");
 
-        when(exchangeRateRepository.existsBy()).thenReturn(false);
-        when(apiClient.fetchAllRates()).thenReturn(List.of(rate));
+        when(apiClient.fetchRatesForDate(YESTERDAY)).thenReturn(List.of(rate));
         when(currencyRepository.findByCode("USD")).thenReturn(Optional.of(usdEntity));
-        when(exchangeRateRepository.existsByCurrencyCodeAndDate("USD", rate.date())).thenReturn(true);
+        when(exchangeRateRepository.existsByCurrencyCodeAndDate("USD", YESTERDAY)).thenReturn(true);
 
-        service().loadHistoricalRatesIfEmpty();
+        service().fetchAndStoreDailyRates();
 
         verify(exchangeRateRepository, never()).save(any());
     }

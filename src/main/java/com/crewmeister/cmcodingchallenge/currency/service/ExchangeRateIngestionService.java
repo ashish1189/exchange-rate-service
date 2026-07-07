@@ -18,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ExchangeRateIngestionService {
@@ -49,7 +52,7 @@ public class ExchangeRateIngestionService {
         }
         log.info("Database is empty; starting bulk load of all historical exchange rates");
         List<ExchangeRate> rates = apiClient.fetchAllRates();
-        persist(rates);
+        persistBulk(rates);
         log.info("Bulk load complete: {} rates persisted", rates.size());
     }
 
@@ -67,6 +70,24 @@ public class ExchangeRateIngestionService {
         log.info("Daily sync complete: {} rates persisted for {}", rates.size(), yesterday);
     }
 
+    // Used on startup when DB is empty: caches currency entities locally to avoid N+1 findByCode
+    // calls, skips per-row existence checks (DB is guaranteed empty), and batch-saves all rates.
+    private void persistBulk(List<ExchangeRate> rates) {
+        Map<String, CurrencyEntity> currencyCache = new HashMap<>();
+        List<ExchangeRateEntity> batch = new ArrayList<>(rates.size());
+
+        for (ExchangeRate rate : rates) {
+            String code = rate.currency().code();
+            CurrencyEntity currency = currencyCache.computeIfAbsent(code,
+                    c -> currencyRepository.findByCode(c)
+                            .orElseGet(() -> currencyRepository.save(new CurrencyEntity(c))));
+            batch.add(new ExchangeRateEntity(currency, rate.date(), rate.rate()));
+        }
+
+        exchangeRateRepository.saveAll(batch);
+    }
+
+    // Used by the daily scheduler: checks for duplicates since the DB already has data.
     private void persist(List<ExchangeRate> rates) {
         for (ExchangeRate rate : rates) {
             String code = rate.currency().code();

@@ -1,6 +1,7 @@
 package com.crewmeister.cmcodingchallenge.currency.api;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,7 +27,7 @@ public class CurrencyController {
      * GET /api/currencies
      */
     @GetMapping("/currencies")
-    public ResponseEntity<List<String>> getCurrencies() {
+    public ResponseEntity<List<CurrencyResponse>> getCurrencies() {
         return ResponseEntity.ok(exchangeRateService.getAvailableCurrencies());
     }
 

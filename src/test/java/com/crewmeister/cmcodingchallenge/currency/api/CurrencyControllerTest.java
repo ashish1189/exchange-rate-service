@@ -1,6 +1,7 @@
 package com.crewmeister.cmcodingchallenge.currency.api;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
@@ -33,12 +34,17 @@ class CurrencyControllerTest {
 
     @Test
     void should_return_200_with_list_of_currency_codes() throws Exception {
-        when(exchangeRateService.getAvailableCurrencies()).thenReturn(List.of("GBP", "USD"));
+        when(exchangeRateService.getAvailableCurrencies())
+                .thenReturn(List.of(
+                        new CurrencyResponse("GBP", "Pound Sterling"),
+                        new CurrencyResponse("USD", "US Dollar")));
 
         mockMvc.perform(get("/api/currencies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").value("GBP"))
-                .andExpect(jsonPath("$[1]").value("USD"));
+                .andExpect(jsonPath("$[0].currencyCode").value("GBP"))
+                .andExpect(jsonPath("$[0].currencyName").value("Pound Sterling"))
+                .andExpect(jsonPath("$[1].currencyCode").value("USD"))
+                .andExpect(jsonPath("$[1].currencyName").value("US Dollar"));
     }
 
     @Test
@@ -128,5 +134,22 @@ class CurrencyControllerTest {
                         .param("amount", "100")
                         .param("date", "2026-01-02"))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- 400 Bad Request ---
+
+    @Test
+    void should_return_400_when_date_path_variable_is_not_a_valid_date() throws Exception {
+        mockMvc.perform(get("/api/exchange-rates/USD/not-a-date"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void should_return_400_when_required_convert_param_is_missing() throws Exception {
+        mockMvc.perform(get("/api/exchange-rates/convert")
+                        .param("currency", "USD")
+                        .param("amount", "100"))
+                // date param is missing
+                .andExpect(status().isBadRequest());
     }
 }

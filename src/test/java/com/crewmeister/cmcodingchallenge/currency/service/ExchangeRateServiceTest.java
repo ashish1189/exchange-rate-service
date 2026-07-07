@@ -1,6 +1,7 @@
 package com.crewmeister.cmcodingchallenge.currency.service;
 
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
@@ -15,11 +16,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Currency;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,16 +43,22 @@ class ExchangeRateServiceTest {
                 new CurrencyEntity("USD")
         ));
 
-        List<String> result = service.getAvailableCurrencies();
+        List<CurrencyResponse> result = service.getAvailableCurrencies();
 
-        assertThat(result).containsExactly("EUR", "GBP", "USD");
+        assertThat(result)
+                .extracting(CurrencyResponse::currencyCode, CurrencyResponse::currencyName)
+                .containsExactly(
+                        tuple("EUR", Currency.getInstance("EUR").getDisplayName(Locale.ENGLISH)),
+                        tuple("GBP", Currency.getInstance("GBP").getDisplayName(Locale.ENGLISH)),
+                        tuple("USD", Currency.getInstance("USD").getDisplayName(Locale.ENGLISH))
+                );
     }
 
     @Test
     void should_return_empty_list_when_no_currencies_in_database() {
         when(currencyRepository.findAllByOrderByCodeAsc()).thenReturn(List.of());
 
-        List<String> result = service.getAvailableCurrencies();
+        List<CurrencyResponse> result = service.getAvailableCurrencies();
 
         assertThat(result).isEmpty();
     }
