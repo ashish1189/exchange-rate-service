@@ -49,6 +49,34 @@ Available at `http://localhost:8080/swagger-ui.html` once the service is running
 
 ---
 
+## 🐳 Docker
+
+### Build
+
+```bash
+docker build -t exchange-rate-service .
+```
+
+### Run
+
+```bash
+docker run -p 8080:8080 exchange-rate-service
+```
+
+The service starts on `http://localhost:8080`.
+
+> **Note:** On first run, the bulk load of historical rates from the Bundesbank API runs automatically. The container health check (`/actuator/health`) has a `start-period` of 120 seconds to account for this.
+
+### Persist H2 data across container restarts
+
+By default H2 data is stored inside the container at `/app/data` and is lost when the container stops. Mount a host volume to persist it:
+
+```bash
+docker run -p 8080:8080 -v $(pwd)/data:/app/data exchange-rate-service
+```
+
+---
+
 ## 🔌 API Endpoints
 
 All endpoints are prefixed with `/api`.
@@ -150,21 +178,21 @@ Errors follow [RFC 9457 Problem Detail](https://www.rfc-editor.org/rfc/rfc9457) 
 ## 🏗️ Architecture & Design
 
 ```
-┌─────────────────────────────────────────────┐
+┌──────────────────────────────────────────────┐
 │               CurrencyController             │  ← REST layer
-├─────────────────────────────────────────────┤
+├──────────────────────────────────────────────┤
 │              ExchangeRateService             │  ← Business logic + Caffeine cache
-├────────────────────┬────────────────────────┤
-│  ExchangeRateRepo  │    CurrencyRepository  │  ← Spring Data JPA
-├────────────────────┴────────────────────────┤
+├────────────────────┬─────────────────────────┤
+│  ExchangeRateRepo  │    CurrencyRepository   │  ← Spring Data JPA
+├────────────────────┴─────────────────────────┤
 │                H2 Database                   │  ← File-based persistence
-└─────────────────────────────────────────────┘
-         ▲
-         │ startup + daily scheduler
-┌────────┴──────────────┐
-│  ExchangeRateIngestion │  ← Bundesbank API client
-│       Service          │
-└───────────────────────┘
+└──────────────────────────────────────────────┘
+                     ▲
+                     │ startup + daily scheduler
+         ┌───────────┴────────────┐
+         │  ExchangeRateIngestion │  ← Bundesbank API client
+         │       Service          │
+         └────────────────────────┘
 ```
 
 The service follows **hexagonal architecture** principles — the controller handles only HTTP concerns and delegates everything to the service layer. Domain objects are kept separate from JPA entities, with mappers at the boundary.
@@ -183,6 +211,7 @@ The service follows **hexagonal architecture** principles — the controller han
 | HTTP Client | Spring `RestClient` |
 | Build | Maven |
 | Testing | JUnit 5 + Mockito + AssertJ |
+| Containerisation | Docker (multi-stage build) |
 
 ---
 
