@@ -43,6 +43,10 @@ public class ExchangeRateIngestionService {
         this.clock = clock;
     }
 
+    /**
+     * ApplicationReadyEvent fires after the full context (including JPA) is initialised -
+     * later than @PostConstruct, ensuring repositories are safe to use.
+     */
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void loadHistoricalRatesIfEmpty() {
@@ -56,6 +60,10 @@ public class ExchangeRateIngestionService {
         log.info("Bulk load complete: {} rates persisted", rates.size());
     }
 
+    /**
+     * Cron is externalised to application.yml (MON-FRI 18:00) so it can be changed per environment
+     * without a code change. Cache eviction ensures stale rates are not served after ingestion.
+     */
     @Scheduled(cron = "${exchange-rate.scheduler.cron}")
     @Transactional
     @Caching(evict = {
@@ -70,8 +78,14 @@ public class ExchangeRateIngestionService {
         log.info("Daily sync complete: {} rates persisted for {}", rates.size(), yesterday);
     }
 
-    // Used on startup when DB is empty: caches currency entities locally to avoid N+1 findByCode
-    // calls, skips per-row existence checks (DB is guaranteed empty), and batch-saves all rates.
+    /**
+     * Used on startup when DB is empty: caches currency entities locally to avoid N+1 findByCode
+     * calls, skips per-row existence checks (DB is guaranteed empty), and batch-saves all rates.
+     *
+     * @param rates
+     *        List of ExchangeRate objects to persist in bulk.
+     *
+     */
     private void persistBulk(List<ExchangeRate> rates) {
         Map<String, CurrencyEntity> currencyCache = new HashMap<>();
         List<ExchangeRateEntity> batch = new ArrayList<>(rates.size());
@@ -87,7 +101,12 @@ public class ExchangeRateIngestionService {
         exchangeRateRepository.saveAll(batch);
     }
 
-    // Used by the daily scheduler: checks for duplicates since the DB already has data.
+    /**
+     * Used by the daily scheduler: checks for duplicates since the DB already has data.
+     *
+     * @param rates
+     *       List of ExchangeRate objects to persist, skipping any that already exist for the same currency and date.
+     */
     private void persist(List<ExchangeRate> rates) {
         for (ExchangeRate rate : rates) {
             String code = rate.currency().code();

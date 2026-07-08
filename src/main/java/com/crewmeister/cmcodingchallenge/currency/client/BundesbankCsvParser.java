@@ -17,6 +17,11 @@ final class BundesbankCsvParser {
     private static final String COL_CURRENCY = "BBK_STD_CURRENCY";
     private static final String COL_DATE = "TIME_PERIOD";
     private static final String COL_RATE = "OBS_VALUE";
+
+    /**
+     * Bundesbank uses a literal "." to indicate no rate published for a date (weekends, holidays).
+     * These rows must be filtered out before BigDecimal parsing to avoid NumberFormatException.
+     */
     private static final String MISSING_VALUE = ".";
 
     private static final CSVFormat FORMAT = CSVFormat.DEFAULT.builder()

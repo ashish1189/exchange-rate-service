@@ -4,6 +4,14 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
+/**
+ * Custom pagination envelope for exchange rate responses.
+ * <p>
+ * Spring's Page<T> could be returned directly, but it serialises to a verbose JSON shape that
+ * exposes Spring Data internals (e.g. "pageable", "sort" objects) which have no meaning to API
+ * consumers. This record produces a clean, stable contract with only the fields a frontend needs
+ * to implement pagination controls, decoupled from the underlying framework.
+ */
 public record ExchangeRatePageResponse<T>(
         List<T> content,
         int page,
