@@ -26,14 +26,15 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 })
 class BundesbankApiClientTest {
 
-    private static final String BASE_URL = "http://test-server";
     private static final String DATA_PATH = "/data/BBEX3/D..EUR.BB.AC.000";
 
     private static final String SAMPLE_CSV =
-            "DATAFLOW;BBK_STD_FREQ;BBK_STD_CURRENCY;BBK_ERX_PARTNER_CURRENCY;" +
-            "BBK_ERX_SERIES_TYPE;BBK_ERX_RATE_TYPE;BBK_ERX_SUFFIX;TIME_PERIOD;OBS_VALUE;BBK_DIFF\n" +
-            "BBK:BBEX3(1.0);D;USD;EUR;BB;AC;000;2026-07-06;1.0426;1.2\n" +
-            "BBK:BBEX3(1.0);D;GBP;EUR;BB;AC;000;2026-07-06;0.83098;0.1\n";
+                    """
+                    DATAFLOW;BBK_STD_FREQ;BBK_STD_CURRENCY;BBK_ERX_PARTNER_CURRENCY;\
+                    BBK_ERX_SERIES_TYPE;BBK_ERX_RATE_TYPE;BBK_ERX_SUFFIX;TIME_PERIOD;OBS_VALUE;BBK_DIFF
+                    BBK:BBEX3(1.0);D;USD;EUR;BB;AC;000;2026-07-06;1.0426;1.2
+                    BBK:BBEX3(1.0);D;GBP;EUR;BB;AC;000;2026-07-06;0.83098;0.1
+                    """;
 
     @Autowired
     private BundesbankApiClient client;

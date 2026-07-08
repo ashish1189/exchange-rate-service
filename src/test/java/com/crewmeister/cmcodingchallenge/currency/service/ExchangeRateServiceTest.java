@@ -222,8 +222,9 @@ class ExchangeRateServiceTest {
     @Test
     void should_throw_when_amount_is_negative() {
         LocalDate date = LocalDate.of(2026, Month.JUNE, 15);
+        BigDecimal negativeAmount = new BigDecimal("-1");
 
-        assertThatThrownBy(() -> service.convertToEur("USD", new BigDecimal("-1"), date))
+        assertThatThrownBy(() -> service.convertToEur("USD", negativeAmount, date))
                 .isInstanceOf(InvalidAmountException.class)
                 .hasMessageContaining("-1");
     }
@@ -234,7 +235,9 @@ class ExchangeRateServiceTest {
         when(exchangeRateRepository.findLatestOnOrBefore("USD", date))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.convertToEur("USD", new BigDecimal("100"), date))
+        BigDecimal amount = new BigDecimal("100");
+
+        assertThatThrownBy(() -> service.convertToEur("USD", amount, date))
                 .isInstanceOf(ExchangeRateNotFoundException.class)
                 .hasMessageContaining("USD")
                 .hasMessageContaining(date.toString());

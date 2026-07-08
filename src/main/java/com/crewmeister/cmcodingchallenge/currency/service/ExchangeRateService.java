@@ -9,7 +9,6 @@ import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFound
 import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
 import com.crewmeister.cmcodingchallenge.currency.repository.ExchangeRateRepository;
-import com.crewmeister.cmcodingchallenge.currency.repository.entity.CurrencyEntity;
 import com.crewmeister.cmcodingchallenge.currency.repository.mapper.ExchangeRateMapper;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
