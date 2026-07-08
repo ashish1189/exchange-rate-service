@@ -3,7 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
-import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRatePageResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.repository.CurrencyRepository;
@@ -82,7 +82,7 @@ class ExchangeRateServiceTest {
 
         when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable)).thenReturn(page);
 
-        PagedResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
+        ExchangeRatePageResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
 
         assertThat(result.content()).hasSize(2);
         assertThat(result.content().get(0).currency()).isEqualTo("GBP");
@@ -98,7 +98,7 @@ class ExchangeRateServiceTest {
 
         when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable)).thenReturn(page);
 
-        PagedResponse<ExchangeRateResponse> result = service.getAllRates(2, 25);
+        ExchangeRatePageResponse<ExchangeRateResponse> result = service.getAllRates(2, 25);
 
         assertThat(result.page()).isEqualTo(2);
         assertThat(result.pageSize()).isEqualTo(25);
@@ -114,7 +114,7 @@ class ExchangeRateServiceTest {
         when(exchangeRateRepository.findAllOrderByCurrencyAndDate(pageable))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        PagedResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
+        ExchangeRatePageResponse<ExchangeRateResponse> result = service.getAllRates(0, 25);
 
         assertThat(result.content()).isEmpty();
         assertThat(result.totalElements()).isZero();

@@ -3,7 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.service;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
-import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRatePageResponse;
 import com.crewmeister.cmcodingchallenge.currency.domain.ExchangeRate;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
@@ -48,8 +48,8 @@ public class ExchangeRateService {
                 .toList();
     }
 
-    public PagedResponse<ExchangeRateResponse> getAllRates(int page, int size) {
-        return PagedResponse.from(
+    public ExchangeRatePageResponse<ExchangeRateResponse> getAllRates(int page, int size) {
+        return ExchangeRatePageResponse.from(
                 exchangeRateRepository.findAllOrderByCurrencyAndDate(PageRequest.of(page, size))
                         .map(ExchangeRateMapper::toDomain)
                         .map(this::toRateResponse)

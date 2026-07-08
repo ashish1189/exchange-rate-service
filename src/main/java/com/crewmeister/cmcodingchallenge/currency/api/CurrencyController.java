@@ -3,7 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.api;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
-import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRatePageResponse;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +41,7 @@ public class CurrencyController {
      * GET /api/exchange-rates
      */
     @GetMapping("/exchange-rates")
-    public ResponseEntity<PagedResponse<ExchangeRateResponse>> getAllRates(
+    public ResponseEntity<ExchangeRatePageResponse<ExchangeRateResponse>> getAllRates(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size) {
         return ResponseEntity.ok(exchangeRateService.getAllRates(page, size));

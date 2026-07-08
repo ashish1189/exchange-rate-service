@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-public record PagedResponse<T>(
+public record ExchangeRatePageResponse<T>(
         List<T> content,
         int page,
         int pageSize,
@@ -13,8 +13,8 @@ public record PagedResponse<T>(
         boolean first,
         boolean last
 ) {
-    public static <T> PagedResponse<T> from(Page<T> page) {
-        return new PagedResponse<>(
+    public static <T> ExchangeRatePageResponse<T> from(Page<T> page) {
+        return new ExchangeRatePageResponse<>(
                 page.getContent(),
                 page.getNumber(),
                 page.getSize(),

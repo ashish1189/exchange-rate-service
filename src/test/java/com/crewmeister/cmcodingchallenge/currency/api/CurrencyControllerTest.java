@@ -3,7 +3,7 @@ package com.crewmeister.cmcodingchallenge.currency.api;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ConversionResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.CurrencyResponse;
 import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRateResponse;
-import com.crewmeister.cmcodingchallenge.currency.api.dto.PagedResponse;
+import com.crewmeister.cmcodingchallenge.currency.api.dto.ExchangeRatePageResponse;
 import com.crewmeister.cmcodingchallenge.currency.exception.ExchangeRateNotFoundException;
 import com.crewmeister.cmcodingchallenge.currency.exception.InvalidAmountException;
 import com.crewmeister.cmcodingchallenge.currency.service.ExchangeRateService;
@@ -64,7 +64,7 @@ class CurrencyControllerTest {
 
     @Test
     void should_return_200_with_paginated_exchange_rates() throws Exception {
-        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+        ExchangeRatePageResponse<ExchangeRateResponse> response = new ExchangeRatePageResponse<>(
                 List.of(new ExchangeRateResponse("GBP", DATE, new BigDecimal("0.8400")),
                         new ExchangeRateResponse("USD", DATE, new BigDecimal("1.0500"))),
                 0, 25, 2L, 1, true, true);
@@ -80,7 +80,7 @@ class CurrencyControllerTest {
 
     @Test
     void should_return_correct_pagination_metadata() throws Exception {
-        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+        ExchangeRatePageResponse<ExchangeRateResponse> response = new ExchangeRatePageResponse<>(
                 List.of(), 2, 25, 120L, 5, false, false);
 
         when(exchangeRateService.getAllRates(anyInt(), anyInt())).thenReturn(response);
@@ -97,7 +97,7 @@ class CurrencyControllerTest {
 
     @Test
     void should_return_200_with_empty_content_when_no_rates_available() throws Exception {
-        PagedResponse<ExchangeRateResponse> response = new PagedResponse<>(
+        ExchangeRatePageResponse<ExchangeRateResponse> response = new ExchangeRatePageResponse<>(
                 List.of(), 0, 25, 0L, 0, true, true);
 
         when(exchangeRateService.getAllRates(anyInt(), anyInt())).thenReturn(response);
